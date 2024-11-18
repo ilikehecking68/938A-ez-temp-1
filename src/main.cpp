@@ -2,11 +2,11 @@
 
 pros::Motor intake(21);
 pros::Motor pto(14);
-pros::ADIDigitalOut pto_piston(1, false);
+pros::ADIDigitalOut pto_piston(2, false);
 bool doinker_status = false;
-pros::ADIDigitalOut doinker(2, false);
+pros::ADIDigitalOut doinker(1, false);
 bool mogo_status = false;
-pros::ADIDigitalOut mogo(3, false);
+pros::ADIDigitalOut mogo(4, false);
 
 
 /////
