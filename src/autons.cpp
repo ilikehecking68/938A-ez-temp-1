@@ -66,6 +66,18 @@ void turn_example() {
   chassis.pid_wait();
 }
 
+void tuner(){
+  chassis.pid_drive_set(15_in, DRIVE_SPEED);
+  chassis.pid_wait();
+
+  //chassis.pid_turn_set(90_deg, TURN_SPEED);
+  //chassis.pid_wait();
+
+  //chassis.pid_swing_set(ez::LEFT_SWING, 45_deg, SWING_SPEED, 45);
+  //chassis.pid_wait();
+
+}
+
 ///
 // Combining Turn + Drive
 ///
