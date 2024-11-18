@@ -15,7 +15,7 @@ const int SWING_SPEED = 127;
 ///
 void default_constants() {
   chassis.pid_heading_constants_set(11, 0, 20);
-  chassis.pid_drive_constants_set(40, 0, 0);
+  chassis.pid_drive_constants_set(5, 0, 3);
   chassis.pid_turn_constants_set(3, 0.05, 20, 15);
   chassis.pid_swing_constants_set(6, 0, 65);
 
@@ -67,7 +67,7 @@ void turn_example() {
 }
 
 void tuner(){
-  chassis.pid_drive_set(15_in, DRIVE_SPEED);
+  chassis.pid_drive_set(40_in, DRIVE_SPEED);
   chassis.pid_wait();
 
   //chassis.pid_turn_set(90_deg, TURN_SPEED);
