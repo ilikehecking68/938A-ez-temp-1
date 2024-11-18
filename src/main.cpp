@@ -1,5 +1,14 @@
 #include "main.h"
 
+pros::Motor intake(21);
+pros::Motor pto(14);
+pros::ADIDigitalOut pto_piston(1, false);
+bool doinker_status = false;
+pros::ADIDigitalOut doinker(2, false);
+bool mogo_status = false;
+pros::ADIDigitalOut mogo(3, false);
+
+
 /////
 // For installation, upgrading, documentations, and tutorials, check out our website!
 // https://ez-robotics.github.io/EZ-Template/
@@ -103,6 +112,53 @@ void autonomous() {
  * operator control task will be stopped. Re-enabling the robot will restart the
  * task, not resume it from where it left off.
  */
+
+
+void doinker_update(bool button_new_press){
+  if (button_new_press){
+    doinker_status = !doinker_status;
+    doinker.set_value(doinker_status);
+  }
+}
+
+void mogo_update(bool button_new_press){
+  if (button_new_press){
+    mogo_status = !mogo_status;
+    mogo.set_value(mogo_status);
+  }
+}
+
+void pto_piston_update(bool intake_in_button_new_press, bool intake_out_button_new_press, bool arm_up_button_new_press, bool arm_down_button_neW_press){
+  if (intake_in_button_new_press || intake_out_button_new_press){
+    pto_piston.set_value(false);
+  } else if (arm_up_button_new_press || arm_down_button_neW_press){
+    pto_piston.set_value(true);
+  }
+}
+
+void intake_update(bool in_button_held, bool out_button_held){
+  if (in_button_held){
+    intake.move(127);
+    pto.move(127);
+  } else if (out_button_held){
+    intake.move(-127);
+    pto.move(-127);
+  } else {
+    intake.move(0);
+    pto.move(0);
+  }
+}
+
+void arm_update(bool up_button_new_press, bool down_button_new_press){
+  if (up_button_new_press){
+    pto.move(127);
+  } else if (down_button_new_press){
+    pto.move(-127);
+  } else {
+    pto.move(0);
+  }
+}
+
 void opcontrol() {
   // This is preference to what you like to drive on
   pros::motor_brake_mode_e_t driver_preference_brake = MOTOR_BRAKE_COAST;
@@ -112,7 +168,7 @@ void opcontrol() {
   while (true) {
     // PID Tuner
     // After you find values that you're happy with, you'll have to set them in auton.cpp
-    if (!pros::competition::is_connected()) {
+    /*if (!pros::competition::is_connected()) {
       // Enable / Disable PID Tuner
       //  When enabled:
       //  * use A and Y to increment / decrement the constants
@@ -127,13 +183,19 @@ void opcontrol() {
       }
 
       chassis.pid_tuner_iterate();  // Allow PID Tuner to iterate
-    }
+    }*/
 
     //chassis.opcontrol_tank();  // Tank control
     chassis.opcontrol_arcade_standard(ez::SPLIT);   // Standard split arcade
     // chassis.opcontrol_arcade_standard(ez::SINGLE);  // Standard single arcade
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
+    pto_piston_update(master.get_digital_new_press(DIGITAL_R2), master.get_digital_new_press(DIGITAL_R1), master.get_digital_new_press(DIGITAL_L1), master.get_digital_new_press(DIGITAL_L2));
+    intake_update(master.get_digital(DIGITAL_R2), master.get_digital(DIGITAL_R1));
+    arm_update(master.get_digital(DIGITAL_L1), master.get_digital(DIGITAL_L2));
+    mogo_update(master.get_digital_new_press(DIGITAL_A));
+    doinker_update(master.get_digital_new_press(DIGITAL_B));
+
 
     // . . .
     // Put more user control code here!
