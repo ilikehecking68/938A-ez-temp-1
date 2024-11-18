@@ -168,7 +168,7 @@ void opcontrol() {
   while (true) {
     // PID Tuner
     // After you find values that you're happy with, you'll have to set them in auton.cpp
-    /*if (!pros::competition::is_connected()) {
+    if (!pros::competition::is_connected()) {
       // Enable / Disable PID Tuner
       //  When enabled:
       //  * use A and Y to increment / decrement the constants
@@ -183,7 +183,7 @@ void opcontrol() {
       }
 
       chassis.pid_tuner_iterate();  // Allow PID Tuner to iterate
-    }*/
+    }
 
     //chassis.opcontrol_tank();  // Tank control
     chassis.opcontrol_arcade_standard(ez::SPLIT);   // Standard split arcade
