@@ -1,7 +1,9 @@
 #include "main.h"
 
-pros::Motor intake(21);
-pros::Motor pto(14);
+pros::Motor pto(14, pros::MotorGears::blue, pros::MotorEncoderUnits::degrees);
+pros::Motor intake(21, pros::MotorGears::blue, pros::MotorEncoderUnits::degrees);
+pros::MotorGroup intake_group({14, 21}, pros::MotorGears::blue, pros::MotorEncoderUnits::degrees);
+bool pto_piston_status = false;
 pros::ADIDigitalOut pto_piston(2, false);
 bool doinker_status = false;
 pros::ADIDigitalOut doinker(1, false);
@@ -32,6 +34,7 @@ ez::Drive chassis(
  */
 void initialize() {
   // Print our branding over your terminal :D
+  pto.set_brake_mode(pros::MotorBrake::hold);
   ez::ez_template_print();
 
   pros::delay(500);  // Stop the user from doing anything while legacy ports configure
@@ -162,6 +165,10 @@ void autonomous() {
  * task, not resume it from where it left off.
  */
 
+void set_pto_piston(bool new_status){
+  pto_piston_status = new_status;
+  pto_piston.set_value(pto_piston_status);
+}
 
 void doinker_update(bool button_new_press){
   if (button_new_press){
@@ -177,34 +184,48 @@ void mogo_update(bool button_new_press){
   }
 }
 
-void pto_piston_update(bool intake_in_button_new_press, bool intake_out_button_new_press, bool arm_up_button_new_press, bool arm_down_button_neW_press){
-  if (intake_in_button_new_press || intake_out_button_new_press){
-    pto_piston.set_value(false);
-  } else if (arm_up_button_new_press || arm_down_button_neW_press){
-    pto_piston.set_value(true);
-  }
-}
-
 void intake_update(bool in_button_held, bool out_button_held){
+  if ((in_button_held || out_button_held) && pto_piston_status){
+    set_pto_piston(false);
+  }
   if (in_button_held){
-    intake.move(127);
-    pto.move(127);
+    intake_group.move(127);
   } else if (out_button_held){
-    intake.move(-127);
-    pto.move(-127);
+    intake_group.move(-127);
   } else {
-    intake.move(0);
-    pto.move(0);
+    intake_group.move(0);
   }
 }
 
-void arm_update(bool up_button_new_press, bool down_button_new_press){
-  if (up_button_new_press){
-    pto.move(127);
-  } else if (down_button_new_press){
-    pto.move(-127);
-  } else {
-    pto.move(0);
+enum arm_position {
+  arm_loading = -210/*loading position*/,
+  arm_scoring = 1/*scoring position*/,
+  arm_noninterfere = 0 /*lowest position(should be 0)*/
+};
+
+arm_position arm_status = arm_noninterfere;
+
+void arm_set_goal_position(arm_position goal_position){
+  arm_status = goal_position;
+  pto.move_absolute(arm_status, 600);
+}
+
+void arm_update(bool load_button_new_press, bool score_button_new_press, bool noninterfere_new_press){
+  if (load_button_new_press || score_button_new_press || noninterfere_new_press){
+    intake_group.move(0);
+    if (!pto_piston_status){
+      set_pto_piston(false);
+    }
+  }
+  if (load_button_new_press){
+    arm_set_goal_position(arm_loading);
+  } else if (score_button_new_press){
+    arm_set_goal_position(arm_scoring);
+  } else if (noninterfere_new_press){
+    arm_set_goal_position(arm_noninterfere);
+  }
+  if (pto.get_position() > arm_status + 5 && pto.get_position() < arm_status - 5 && arm_status == arm_scoring){
+    arm_set_goal_position(arm_loading);
   }
 }
 
@@ -239,9 +260,8 @@ void opcontrol() {
     // chassis.opcontrol_arcade_standard(ez::SINGLE);  // Standard single arcade
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
-    pto_piston_update(master.get_digital_new_press(DIGITAL_R2), master.get_digital_new_press(DIGITAL_R1), master.get_digital_new_press(DIGITAL_L1), master.get_digital_new_press(DIGITAL_L2));
     intake_update(master.get_digital(DIGITAL_R2), master.get_digital(DIGITAL_R1));
-    arm_update(master.get_digital(DIGITAL_L1), master.get_digital(DIGITAL_L2));
+    arm_update(master.get_digital_new_press(DIGITAL_L1), master.get_digital_new_press(DIGITAL_L2), master.get_digital_new_press(DIGITAL_UP));
     mogo_update(master.get_digital_new_press(DIGITAL_A));
     doinker_update(master.get_digital_new_press(DIGITAL_B));
 
