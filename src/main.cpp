@@ -151,7 +151,7 @@ void intake_update(bool in_button_held, bool out_button_held){
 
 void arm_update(bool up_button_new_press, bool down_button_new_press){
   if (up_button_new_press){
-    pto.move_absolute()
+    pto.move(127);
   } else if (down_button_new_press){
     pto.move(-127);
   } else {
