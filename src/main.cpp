@@ -34,6 +34,7 @@ ez::Drive chassis(
  */
 void initialize() {
   // Print our branding over your terminal :D
+  pto.set_brake_mode(pros::MotorBrake::hold);
   ez::ez_template_print();
 
   pros::delay(500);  // Stop the user from doing anything while legacy ports configure
