@@ -49,7 +49,6 @@ void initialize() {
   // chassis.opcontrol_curve_buttons_right_set(pros::E_CONTROLLER_DIGITAL_Y, pros::E_CONTROLLER_DIGITAL_A);
 
   // Autonomous Selector using LLEMU
-  tuner();
 
   // Initialize chassis and auton selector
   chassis.initialize();
@@ -96,7 +95,57 @@ void autonomous() {
   chassis.drive_sensor_reset();               // Reset drive sensors to 0
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
 
-  ez::as::auton_selector.selected_auton_call();  // Calls selected auton from autonomous selector
+    //chassis.pid_drive_set(40_in, DRIVE_SPEED);
+  //chassis.pid_wait();
+
+  //chassis.pid_turn_set(90_deg, TURN_SPEED);
+  //chassis.pid_wait();
+
+  //chassis.pid_swing_set(ez::LEFT_SWING, 45_deg, SWING_SPEED, 45);
+  //chassis.pid_wait();
+
+  chassis.pid_drive_set(-23, 120);
+  chassis.pid_wait();
+  //put down mogo
+  //turn on intake
+
+  //chassis.pid_swing_set(ez::LEFT_SWING, 180, 120, 5);
+  //chassis.pid_wait();
+  
+  chassis.pid_turn_set(140, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(26, 50);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-6, 120);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(127, 110);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(12, 50);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-15, 120);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(37, 110);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(46, 95);
+  chassis.pid_wait();
+
+  //doinker out
+
+  chassis.pid_turn_set(95, 50);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-5, 70);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(145, 127);
+  chassis.pid_wait();
 }
 
 /**

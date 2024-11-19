@@ -1,3 +1,4 @@
+#include "EZ-Template/util.hpp"
 #include "main.h"
 
 /////
@@ -15,8 +16,9 @@ const int SWING_SPEED = 127;
 ///
 void default_constants() {
   chassis.pid_heading_constants_set(11, 0, 20);
-  chassis.pid_drive_constants_set(5, 0, 3);
-  chassis.pid_turn_constants_set(3, 0.05, 20, 15);
+  chassis.pid_drive_constants_forward_set(20, 0, 100); //5, 0 , 355
+  chassis.pid_drive_constants_backward_set(20, 0, 100);
+  chassis.pid_turn_constants_set(5, 4, 23.5, 0); //5, 0.05, 4, 0
   chassis.pid_swing_constants_set(6, 0, 65);
 
   chassis.pid_turn_exit_condition_set(80_ms, 3_deg, 250_ms, 7_deg, 500_ms, 500_ms);
@@ -67,14 +69,26 @@ void turn_example() {
 }
 
 void tuner(){
-  chassis.pid_drive_set(40_in, DRIVE_SPEED);
-  chassis.pid_wait();
+  //chassis.pid_drive_set(40_in, DRIVE_SPEED);
+  //chassis.pid_wait();
 
   //chassis.pid_turn_set(90_deg, TURN_SPEED);
   //chassis.pid_wait();
 
   //chassis.pid_swing_set(ez::LEFT_SWING, 45_deg, SWING_SPEED, 45);
   //chassis.pid_wait();
+
+  chassis.pid_drive_set(-23, DRIVE_SPEED);
+  chassis.pid_wait();
+  //put down mogo
+  //turn on intake
+
+  //chassis.pid_swing_set(ez::LEFT_SWING, 180, 120, 5);
+  //chassis.pid_wait();
+
+  chassis.pid_turn_set(180, TURN_SPEED);
+  chassis.pid_wait();
+
 
 }
 
