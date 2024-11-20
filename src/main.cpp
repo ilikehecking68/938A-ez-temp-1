@@ -231,7 +231,7 @@ void arm_update(bool load_button_new_press, bool score_button_new_press, bool no
 
 void opcontrol() {
   // This is preference to what you like to drive on
-  pros::motor_brake_mode_e_t driver_preference_brake = MOTOR_BRAKE_COAST;
+  /*pros::motor_brake_mode_e_t driver_preference_brake = MOTOR_BRAKE_COAST;
 
   chassis.drive_brake_set(driver_preference_brake);
 
@@ -261,7 +261,7 @@ void opcontrol() {
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
     intake_update(master.get_digital(DIGITAL_R2), master.get_digital(DIGITAL_R1));
-    arm_update(master.get_digital_new_press(DIGITAL_L1), master.get_digital_new_press(DIGITAL_L2), master.get_digital_new_press(DIGITAL_UP));
+    //arm_update(master.get_digital_new_press(DIGITAL_L1), master.get_digital_new_press(DIGITAL_L2), master.get_digital_new_press(DIGITAL_UP));
     mogo_update(master.get_digital_new_press(DIGITAL_A));
     doinker_update(master.get_digital_new_press(DIGITAL_B));
 
@@ -271,5 +271,5 @@ void opcontrol() {
     // . . .
 
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
-  }
+  }*/
 }
