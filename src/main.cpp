@@ -10,6 +10,7 @@ pros::ADIDigitalOut doinker(1, false);
 bool mogo_status = false;
 pros::ADIDigitalOut mogo(4, false);
 pros::Rotation arm_sensor(10);
+#define arm_sensor_get_degrees()((double)((arm_sensor).get_position() / 100))
 
 
 /////
@@ -36,7 +37,9 @@ ez::Drive chassis(
 void initialize() {
   // Print our branding over your terminal :D
   pto.set_brake_mode(pros::MotorBrake::hold);
+  arm_sensor.reverse();
   arm_sensor.reset_position();
+  pto.tare_position();
   ez::ez_template_print();
 
   pros::delay(500);  // Stop the user from doing anything while legacy ports configure
@@ -188,6 +191,39 @@ void mogo_update(bool button_new_press){
   }
 }
 
+#define arm_loading 28/*loading position*/
+#define arm_noninterfere 0 /*lowest position(should be 0)*/
+
+double arm_target = arm_noninterfere;
+ez::PID arm_pid(4.2, 0, 20, 0, "Arm");
+
+bool arm_pid_running = false;
+void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfere_button_new_press){
+  if (up_button_held || noninterfere_button_new_press || load_button_new_press){
+    intake_group.move(0);
+    if (!pto_piston_status){
+      set_pto_piston(true);
+    }
+  }
+  if (up_button_held){
+    pto.move(-127);
+    arm_pid_running = false;
+  } else if (load_button_new_press){
+    arm_target = arm_loading;
+    arm_pid.target_set(arm_target);
+    arm_pid_running = true;
+  } else if (noninterfere_button_new_press){
+    arm_target = arm_noninterfere;
+    arm_pid.target_set(arm_target);
+    arm_pid_running = true;
+  }
+  if (arm_pid_running){
+    pto.move(-arm_pid.compute(arm_sensor_get_degrees()));
+  } else if (!up_button_held){
+    pto.move(0);
+  }
+}
+
 void intake_update(bool in_button_held, bool out_button_held){
   if ((in_button_held || out_button_held) && pto_piston_status){
     set_pto_piston(false);
@@ -201,56 +237,17 @@ void intake_update(bool in_button_held, bool out_button_held){
   }
 }
 
-#define arm_loading 300/*loading position*/
-#define arm_scoring 100/*scoring position*/
-#define arm_noninterfere 0 /*lowest position(should be 0)*/
-typedef double arm_position;
-
-arm_position arm_target = arm_noninterfere;
-#define arm_range_condition(op, min, max)((arm_sensor.get_position() op arm_target ? (max) : (min)))
-void arm_update(bool load_button_new_press, bool score_button_new_press, bool noninterfere_new_press){
-  if (load_button_new_press){
-    arm_target = arm_loading;
-  } else if (score_button_new_press){
-    arm_target = arm_scoring;
-  } else if (noninterfere_new_press){
-    arm_target = arm_noninterfere;
-  }
-  if (load_button_new_press || score_button_new_press || noninterfere_new_press){
-    intake_group.move(0);
-    pto.move(arm_range_condition(<, 127, -127));
-    if (!pto_piston_status){
-      set_pto_piston(true);
-    }
-  }
-  if (load_button_new_press || score_button_new_press || noninterfere_new_press){
-    intake_group.move(0);
-    pto.move(arm_range_condition(<, 127, -127));
-    if (!pto_piston_status){
-      set_pto_piston(true);
-    }
-  }
-  if (pto.get_position() > arm_target + arm_range_condition(>, 15, -15)){
-    pto.move(arm_range_condition(<, 64, -64));
-  }
-  if (pto.get_position() > arm_target - 2 && pto.get_position() < arm_target + 2){
-    pto.move(0);
-    if (arm_target == arm_scoring){
-      arm_target = arm_loading;
-    }
-  }
-}
-
 void opcontrol() {
   // This is preference to what you like to drive on
   pros::motor_brake_mode_e_t driver_preference_brake = MOTOR_BRAKE_COAST;
 
   chassis.drive_brake_set(driver_preference_brake);
-
+  arm_pid.exit_condition_set(80, 2, 250, 8, 500, 500);
+  arm_target = arm_noninterfere;
   while (true) {
     // PID Tuner
     // After you find values that you're happy with, you'll have to set them in auton.cpp
-    if (!pros::competition::is_connected()) {
+    /*if (!pros::competition::is_connected()) {
       // Enable / Disable PID Tuner
       //  When enabled:
       //  * use A and Y to increment / decrement the constants
@@ -265,7 +262,7 @@ void opcontrol() {
       }
 
       chassis.pid_tuner_iterate();  // Allow PID Tuner to iterate
-    }
+    }*/
 
     //chassis.opcontrol_tank();  // Tank control
     chassis.opcontrol_arcade_standard(ez::SPLIT);   // Standard split arcade
@@ -273,11 +270,12 @@ void opcontrol() {
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
     intake_update(master.get_digital(DIGITAL_R2), master.get_digital(DIGITAL_R1));
-    arm_update(master.get_digital(DIGITAL_L1), master.get_digital(DIGITAL_L2), master.get_digital(DIGITAL_UP));
-    mogo_update(master.get_digital_new_press(DIGITAL_A));
-    doinker_update(master.get_digital_new_press(DIGITAL_B));
+    arm_update(master.get_digital(DIGITAL_LEFT/*B*/), master.get_digital_new_press(DIGITAL_RIGHT), master.get_digital_new_press(DIGITAL_DOWN));
+    mogo_update(master.get_digital_new_press(DIGITAL_Y));
+    doinker_update(master.get_digital_new_press(DIGITAL_L1));
     pros::lcd::print(2, pto_piston_status ? "true" : "false");
-
+    pros::lcd::print(3, "%lf", (double)(arm_sensor.get_position() / 100));
+    
     // . . .
     // Put more user control code here!
     // . . .
