@@ -9,6 +9,7 @@ bool doinker_status = false;
 pros::ADIDigitalOut doinker(1, false);
 bool mogo_status = false;
 pros::ADIDigitalOut mogo(4, false);
+pros::Rotation arm_sensor(10);
 
 
 /////
@@ -35,6 +36,7 @@ ez::Drive chassis(
 void initialize() {
   // Print our branding over your terminal :D
   pto.set_brake_mode(pros::MotorBrake::hold);
+  arm_sensor.reset_position();
   ez::ez_template_print();
 
   pros::delay(500);  // Stop the user from doing anything while legacy ports configure
@@ -52,7 +54,9 @@ void initialize() {
   // chassis.opcontrol_curve_buttons_right_set(pros::E_CONTROLLER_DIGITAL_Y, pros::E_CONTROLLER_DIGITAL_A);
 
   // Autonomous Selector using LLEMU
-
+    ez::as::auton_selector.autons_add({
+      Auton("pid tuner", tuner)
+  });
   // Initialize chassis and auton selector
   chassis.initialize();
   ez::as::initialize();
@@ -197,41 +201,49 @@ void intake_update(bool in_button_held, bool out_button_held){
   }
 }
 
-enum arm_position {
-  arm_loading = -210/*loading position*/,
-  arm_scoring = 1/*scoring position*/,
-  arm_noninterfere = 0 /*lowest position(should be 0)*/
-};
+#define arm_loading 300/*loading position*/
+#define arm_scoring 100/*scoring position*/
+#define arm_noninterfere 0 /*lowest position(should be 0)*/
+typedef double arm_position;
 
-arm_position arm_status = arm_noninterfere;
-
-void arm_set_goal_position(arm_position goal_position){
-  arm_status = goal_position;
-  pto.move_absolute(arm_status, 600);
-}
-
+arm_position arm_target = arm_noninterfere;
+#define arm_range_condition(op, min, max)((arm_sensor.get_position() op arm_target ? (max) : (min)))
 void arm_update(bool load_button_new_press, bool score_button_new_press, bool noninterfere_new_press){
+  if (load_button_new_press){
+    arm_target = arm_loading;
+  } else if (score_button_new_press){
+    arm_target = arm_scoring;
+  } else if (noninterfere_new_press){
+    arm_target = arm_noninterfere;
+  }
   if (load_button_new_press || score_button_new_press || noninterfere_new_press){
     intake_group.move(0);
+    pto.move(arm_range_condition(<, 127, -127));
     if (!pto_piston_status){
-      set_pto_piston(false);
+      set_pto_piston(true);
     }
   }
-  if (load_button_new_press){
-    arm_set_goal_position(arm_loading);
-  } else if (score_button_new_press){
-    arm_set_goal_position(arm_scoring);
-  } else if (noninterfere_new_press){
-    arm_set_goal_position(arm_noninterfere);
+  if (load_button_new_press || score_button_new_press || noninterfere_new_press){
+    intake_group.move(0);
+    pto.move(arm_range_condition(<, 127, -127));
+    if (!pto_piston_status){
+      set_pto_piston(true);
+    }
   }
-  if (pto.get_position() > arm_status + 5 && pto.get_position() < arm_status - 5 && arm_status == arm_scoring){
-    arm_set_goal_position(arm_loading);
+  if (pto.get_position() > arm_target + arm_range_condition(>, 15, -15)){
+    pto.move(arm_range_condition(<, 64, -64));
+  }
+  if (pto.get_position() > arm_target - 2 && pto.get_position() < arm_target + 2){
+    pto.move(0);
+    if (arm_target == arm_scoring){
+      arm_target = arm_loading;
+    }
   }
 }
 
 void opcontrol() {
   // This is preference to what you like to drive on
-  /*pros::motor_brake_mode_e_t driver_preference_brake = MOTOR_BRAKE_COAST;
+  pros::motor_brake_mode_e_t driver_preference_brake = MOTOR_BRAKE_COAST;
 
   chassis.drive_brake_set(driver_preference_brake);
 
@@ -261,15 +273,15 @@ void opcontrol() {
     // chassis.opcontrol_arcade_flipped(ez::SPLIT);    // Flipped split arcade
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
     intake_update(master.get_digital(DIGITAL_R2), master.get_digital(DIGITAL_R1));
-    //arm_update(master.get_digital_new_press(DIGITAL_L1), master.get_digital_new_press(DIGITAL_L2), master.get_digital_new_press(DIGITAL_UP));
+    arm_update(master.get_digital(DIGITAL_L1), master.get_digital(DIGITAL_L2), master.get_digital(DIGITAL_UP));
     mogo_update(master.get_digital_new_press(DIGITAL_A));
     doinker_update(master.get_digital_new_press(DIGITAL_B));
-
+    pros::lcd::print(2, pto_piston_status ? "true" : "false");
 
     // . . .
     // Put more user control code here!
     // . . .
 
     pros::delay(ez::util::DELAY_TIME);  // This is used for timer calculations!  Keep this ez::util::DELAY_TIME
-  }*/
+  }
 }
