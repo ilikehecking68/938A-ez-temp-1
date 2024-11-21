@@ -5,7 +5,7 @@ bool doinker_status = false;
 pros::ADIDigitalOut doinker(1, false);
 bool mogo_status = false;
 pros::ADIDigitalOut mogo(3, false);
-pros::MotorGroup arm_motors({2, 10}, pros::MotorGears::green, pros::MotorEncoderUnits::degrees);
+pros::MotorGroup arm_motors({2, 9}, pros::MotorGears::green, pros::MotorEncoderUnits::degrees);
 pros::Rotation arm_sensor(10);
 #define arm_sensor_get_degrees()((double)((arm_sensor).get_position() / 100))
 
