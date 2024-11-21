@@ -5,7 +5,7 @@ bool doinker_status = false;
 pros::ADIDigitalOut doinker(1, false);
 bool mogo_status = false;
 pros::ADIDigitalOut mogo(3, false);
-pros::MotorGroup arm_motors({2, 9}, pros::MotorGears::green, pros::MotorEncoderUnits::degrees);
+pros::Motor arm_motor(2, pros::MotorGears::green, pros::MotorEncoderUnits::degrees);
 pros::Rotation arm_sensor(10);
 #define arm_sensor_get_degrees()((double)((arm_sensor).get_position() / 100))
 
@@ -33,8 +33,8 @@ ez::Drive chassis(
  */
 void initialize() {
   // Print our branding over your terminal :D
-  arm_motors.set_brake_mode(pros::MotorBrake::hold);
-  arm_motors.tare_position_all();
+  arm_motor.set_brake_mode(pros::MotorBrake::hold);
+  arm_motor.tare_position_all();
   arm_sensor.reverse();
   arm_sensor.reset_position();
   ez::ez_template_print();
@@ -158,7 +158,7 @@ void autonomous() {
   chassis.pid_wait();
   
   doinker.set_value(false); //doinker in
-  arm_motors.move_relative(170, 50); //move arm
+  arm_motor.move_relative(170, 50); //move arm
 
   chassis.pid_drive_set(-72, 127); //touch bar
   chassis.pid_wait();
@@ -304,7 +304,7 @@ ez::PID arm_pid(4.2, 0, 20, 0, "Arm");
 bool arm_pid_running = false;
 void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfere_button_new_press){
   if (up_button_held){
-    arm_motors.move(-127);
+    arm_motor.move(-127);
     arm_pid_running = false;
   } else if (load_button_new_press){
     arm_target = arm_loading;
@@ -316,9 +316,9 @@ void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfe
     arm_pid_running = true;
   }
   if (arm_pid_running){
-    arm_motors.move(-arm_pid.compute(arm_sensor_get_degrees()));
+    arm_motor.move(-arm_pid.compute(arm_sensor_get_degrees()));
   } else if (!up_button_held){
-    arm_motors.move(0);
+    arm_motor.move(0);
   }
 }
 
