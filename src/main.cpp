@@ -4,6 +4,7 @@
 
 pros::Motor intake(21, pros::MotorGears::blue, pros::MotorEncoderUnits::degrees);
 bool doinker_status = false;
+bool prev_doinker_status = false;
 #define doinker_out true
 #define doinker_in false
 pros::ADIDigitalOut doinker(1, false);
@@ -17,16 +18,22 @@ pros::Rotation arm_sensor(9);
 
 
 void doinker_update(bool button_new_press){
-  if (button_new_press){
-    doinker_status = !doinker_status;
+  if (button_new_press && !mogo_status){ //runs if button is pressed(not held)
+    doinker_status = !doinker_status; //toggle doinker status
+  }
+  if (mogo_status){
+    doinker_status = false;
+  }
+  if (doinker_status != prev_doinker_status){
     doinker.set_value(doinker_status);
   }
+  prev_doinker_status = doinker_status;
 }
 
 void mogo_update(bool button_new_press){
-  if (button_new_press){
-    mogo_status = !mogo_status;
-    mogo.set_value(mogo_status);
+  if (button_new_press){ //runs if button is pressed(not held)
+    mogo_status = !mogo_status; //toggle mog status
+    mogo.set_value(mogo_status); //set mogo
   }
 }
 
@@ -39,9 +46,9 @@ ez::PID arm_pid(3, 0, 0, 0, "Arm");
 
 bool arm_pid_running = false;
 void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfere_button_new_press){
-  if (up_button_held){
-    arm_motor.move(-127);
-    arm_pid_running = false;
+  if (up_button_held){ //to score
+    arm_motor.move(-127); //move arm up
+     arm_pid_running = false;
   } else if (load_button_new_press){
     arm_target = arm_loading;
     arm_pid.target_set(arm_target);
@@ -52,9 +59,9 @@ void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfe
     arm_pid_running = true;
   }
   if (arm_pid_running){
-    arm_motor.move(-(arm_pid.compute(arm_sensor_get_degrees())));
+    arm_motor.move(-(arm_pid.compute(arm_sensor_get_degrees()))); //compute PID for arm and set it motor value to it
   } else if (!up_button_held){
-    arm_motor.move(0);
+    arm_motor.move(0); //if pid not run and not scoring stop arm motor
   }
 }
 
@@ -418,8 +425,8 @@ void opcontrol() {
     // chassis.opcontrol_arcade_flipped(ez::SINGLE);   // Flipped single arcade
     intake_update(master.get_digital(DIGITAL_R2), master.get_digital(DIGITAL_R1));
     arm_update(master.get_digital(DIGITAL_B), master.get_digital_new_press(DIGITAL_RIGHT), master.get_digital_new_press(DIGITAL_DOWN));
-    mogo_update(master.get_digital_new_press(DIGITAL_Y));
-    doinker_update(master.get_digital_new_press(DIGITAL_L1));
+    mogo_update(master.get_digital_new_press(DIGITAL_A));
+    doinker_update(master.get_digital_new_press(DIGITAL_UP));
     pros::lcd::print(3, "%lf", (double)(arm_sensor.get_position() / 100));
     
     // . . .
