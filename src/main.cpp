@@ -1,8 +1,10 @@
 #include "main.h"
+#include <sys/_intsup.h>
 #include "EZ-Template/util.hpp"
+#include "pros/motor_group.hpp"
 #include "pros/rtos.hpp"
 
-pros::Motor intake(21, pros::MotorGears::blue, pros::MotorEncoderUnits::degrees);
+pros::MotorGroup intake({-4, 21}, pros::MotorGears::blue, pros::MotorEncoderUnits::degrees);
 bool doinker_status = false;
 bool prev_doinker_status = false;
 #define doinker_out true
@@ -12,7 +14,7 @@ bool mogo_status = false;
 #define mogo_up true
 #define mogo_down false
 pros::ADIDigitalOut mogo(4, false);
-pros::Motor arm_motor(4, pros::MotorGears::green, pros::MotorEncoderUnits::degrees);
+pros::Motor arm_motor(3, pros::MotorGears::green, pros::MotorEncoderUnits::degrees);
 pros::Rotation arm_sensor(9);
 #define arm_sensor_get_degrees()((double)((arm_sensor).get_position() / 100))
 
@@ -43,12 +45,39 @@ void mogo_update(bool button_new_press){
 
 double arm_target = arm_noninterfere;
 ez::PID arm_pid(3, 0, 0, 0, "Arm");
-
 bool arm_pid_running = false;
+/*bool arm_is_scoring = false;
+unsigned long long arm_scoring_time = 0;*/
 void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfere_button_new_press){
-  if (up_button_held){ //to score
+
+  /*if (up_button_held){ //to score
     arm_motor.move(-127); //move arm up
-     arm_pid_running = false;
+    arm_pid_running = false;*/
+
+  /*int wallstakearm = 0;//0:neutral, 1:loading, 2:scoring
+  if (up_button_held){
+    if (wallstakearm == 0){
+      arm_pid_running = false;
+      arm_is_scoring = true;
+      wallstakearm++;
+    } else if (wallstakearm == 1) {
+      arm_target = arm_loading;
+      arm_pid.target_set(arm_target);
+      arm_pid_running = true;
+      arm_is_scoring = false;
+      wallstakearm++;
+    } else {
+      arm_target = arm_noninterfere;
+      arm_pid.target_set(arm_target);
+      arm_pid_running = true;
+      arm_is_scoring = false;
+      if (wallstakearm >= ){}
+      wallstakearm = 0;
+    }
+  }*/
+  /*if (up_button_held){
+    arm_motor.move(-127);
+    arm_pid_running = false;
   } else if (load_button_new_press){
     arm_target = arm_loading;
     arm_pid.target_set(arm_target);
@@ -57,12 +86,16 @@ void arm_update(bool up_button_held, bool load_button_new_press, bool noninterfe
     arm_target = arm_noninterfere;
     arm_pid.target_set(arm_target);
     arm_pid_running = true;
-  }
-  if (arm_pid_running){
+  }*/
+
+  /*if (arm_pid_running){
     arm_motor.move(-(arm_pid.compute(arm_sensor_get_degrees()))); //compute PID for arm and set it motor value to it
   } else if (!up_button_held){
     arm_motor.move(0); //if pid not run and not scoring stop arm motor
-  }
+    arm_motor.move(-(arm_pid.compute(arm_sensor_get_degrees())));
+  } else if (!up_button_held/!arm_is_scoring && arm_scoring_time > 100*//*){
+    arm_motor.move(0);
+  }*/
 }
 
 void intake_update(bool in_button_held, bool out_button_held){
@@ -104,7 +137,72 @@ void arm_mtp(double degrees){
   }
 }
 
-void redleft(){
+void redright(){
+  chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
+
+  doinker.set_value(doinker_in);
+  mogo.set_value(mogo_up);
+
+  chassis.pid_drive_set(-15, 95);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(35, 80);
+  chassis.pid_wait();
+  
+  chassis.pid_drive_set(-20, 50);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  pros::delay(500);
+
+  chassis.pid_turn_set(-92, 100);
+  chassis.pid_wait();
+
+  intake.move(-127);
+
+  chassis.pid_drive_set(30, 80);
+  chassis.pid_wait();
+
+};
+
+void redleft_2ring_bar_touch(){
+  doinker.set_value(doinker_in);
+  mogo.set_value(mogo_up);
+
+  chassis.pid_drive_set(-15, 95);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(-35, 80);
+  chassis.pid_wait();
+  
+  chassis.pid_drive_set(-20, 50);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  pros::delay(500);
+
+  chassis.pid_turn_set(90, 100);
+  chassis.pid_wait();
+
+  intake.move(-127);
+
+  chassis.pid_drive_set(20, 80);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(-90, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(55, 100);
+  chassis.pid_wait();
+};
+
+void redleft_4_ring(){
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
 
   //chassis.pid_turn_set(90_deg, TURN_SPEED);
@@ -142,19 +240,34 @@ void redleft(){
   chassis.pid_turn_set(180, 100);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(15, 60);
+  chassis.pid_drive_set(14, 60);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-5, 120);
+  chassis.pid_drive_set(-8, 120);
   chassis.pid_wait();
 
-  chassis.pid_turn_set(168, 100);
+  chassis.pid_turn_set(90, 100);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(10, 50);
+  chassis.pid_drive_set(6, 100);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-30, 127);
+  chassis.pid_turn_set(180, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(8, 80);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-25, 50);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(-90, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(50, 100);
+  chassis.pid_wait();
+
+  /*chassis.pid_drive_set(-30, 127);
   chassis.pid_wait();
 
   chassis.pid_turn_set(38, 100);
@@ -174,57 +287,10 @@ void redleft(){
   chassis.pid_wait();
 
   chassis.pid_drive_set(50, 127);
-  chassis.pid_wait();
-
-
-  //chassis.pid_swing_set(ez::LEFT_SWING, 180, 120, 5);
-  //chassis.pid_wait();
-  
-  /*chassis.pid_turn_set(140, 100);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(26, 50);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-6, 120);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(127, 110);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(12, 50);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-15, 120);
-  chassis.pid_wait();
-
-  intake.move(0);
-
-  chassis.pid_turn_set(37, 110);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(46, 95);
-  chassis.pid_wait();
-
-  doinker.set_value(true);
-
-  chassis.pid_turn_set(95, 50);
-  chassis.pid_wait();
-
-  chassis.pid_drive_set(-5, 70);
-  chassis.pid_wait();
-
-  chassis.pid_turn_set(145, 127);
-  chassis.pid_wait();
-  
-  doinker.set_value(false); //doinker in
-  arm_motor.move_relative(170, 50); //move arm
-
-  chassis.pid_drive_set(-72, 127); //touch bar
   chassis.pid_wait();*/
 }
 
-void blueright() {
+void blueright_4ring() {
 
   chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
 
@@ -260,16 +326,25 @@ void blueright() {
   chassis.pid_drive_set(14, 60);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-5, 120);
+  chassis.pid_drive_set(-6, 120);
   chassis.pid_wait();
 
-  chassis.pid_turn_set(-168, 100);
+  chassis.pid_turn_set(-90, 100);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(10, 50);
+  chassis.pid_drive_set(6, 50);
   chassis.pid_wait();
 
-  chassis.pid_drive_set(-30, 127);
+  chassis.pid_turn_set(-180, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(6.5, 80);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-40, 100);
+  chassis.pid_wait();
+
+  /*chassis.pid_drive_set(-30, 127);
   chassis.pid_wait();
 
   chassis.pid_turn_set(-38, 100);
@@ -289,9 +364,204 @@ void blueright() {
   chassis.pid_wait();
 
   chassis.pid_drive_set(54, 127);
-  chassis.pid_wait();
+  chassis.pid_wait();*/
 
 }
+
+void sawp_red_local(){
+  chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
+
+  doinker.set_value(doinker_in);
+  mogo.set_value(mogo_up);
+
+  chassis.pid_drive_set(-35, 120);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(25, 110);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-20, 70);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  pros::delay(500);
+
+  chassis.pid_turn_set(-2, 100);
+  chassis.pid_wait();
+
+  intake.move(-127);
+
+  pros::delay(1000);
+
+  chassis.pid_drive_set(3, 127);
+  chassis.pid_wait();
+  chassis.pid_drive_set(-3, 127);
+  chassis.pid_wait();
+
+  mogo.set_value(mogo_down);
+
+  chassis.pid_drive_set(20, 80);
+  chassis.pid_wait();
+
+  pros::delay(200);
+
+  intake.move(0);
+
+  chassis.pid_turn_set(-90, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-20, 80);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  pros::delay(500);
+
+  intake.move(-127);
+
+  chassis.pid_drive_set(3, 127);
+  chassis.pid_wait();
+  chassis.pid_drive_set(-3, 127);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(90, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(10, 100);
+  chassis.pid_wait();
+}
+
+void blueleft(){
+  chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
+
+  doinker.set_value(doinker_in);
+  mogo.set_value(mogo_up);
+
+  chassis.pid_drive_set(-15, 95);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(-35, 80);
+  chassis.pid_wait();
+  
+  chassis.pid_drive_set(-20, 50);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  pros::delay(500);
+
+  chassis.pid_turn_set(92, 100);
+  chassis.pid_wait();
+
+  intake.move(-127);
+
+  chassis.pid_drive_set(30, 80);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(-90, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(45, 127);
+  chassis.pid_wait();
+
+  /*chassis.pid_turn_set(55, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-35, 100);
+  chassis.pid_wait();*/
+};
+
+void one_inch_sawp_coop(){
+  chassis.pid_drive_set(1, 100);
+  chassis.pid_wait();
+}
+
+void sawp(){
+  chassis.drive_brake_set(MOTOR_BRAKE_HOLD);  // Set motors to hold.  This helps autonomous consistency
+
+  doinker.set_value(doinker_in);
+  mogo.set_value(mogo_up);
+
+  chassis.pid_drive_set(-50, 120);
+  chassis.pid_wait();
+
+  chassis.pid_turn_set(35, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-7, 60);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  pros::delay(500);
+
+  intake.move(-127); // turn on intake to score preload
+
+  pros::delay(800); // wait till intake is done scoring
+
+  intake.move(0); // stop intake
+
+  chassis.pid_drive_set(13, 120);
+  chassis.pid_wait();
+  
+  mogo.set_value(mogo_up);
+
+  chassis.pid_turn_set(40, 120);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-28, 100);
+  chassis.pid_wait();
+
+  chassis.pid_drive_set(-5, 50);
+  chassis.pid_wait();
+
+  pros::delay(5);
+
+  mogo.set_value(mogo_down);
+
+  chassis.pid_turn_set(-90, 100);
+  chassis.pid_wait();
+
+  intake.move(-127);
+
+  chassis.pid_drive_set(20, 100);
+  chassis.pid_wait();
+
+  intake.move(0);
+
+  chassis.pid_turn_set(55, 110);
+  chassis.pid_wait();
+
+  //raise arm to loading pose
+
+  intake.move(-60);
+
+  chassis.pid_drive_set(40, 100); // go intake the bottom blue ring of the stack
+  chassis.pid_wait();
+
+  pros::delay(80);
+
+  chassis.pid_turn_set(-85, 127);
+  chassis.pid_wait();
+
+  intake.move(127);
+
+  pros::delay(750);
+
+  chassis.pid_turn_set(55, 120);
+  chassis.pid_wait();
+
+
+};
 
 void initialize() {
   // Print our branding over your terminal :D
@@ -316,10 +586,14 @@ void initialize() {
   // chassis.opcontrol_curve_buttons_right_set(pros::E_CONTROLLER_DIGITAL_Y, pros::E_CONTROLLER_DIGITAL_A);
 
   // Autonomous Selector using LLEMU
-    ez::as::auton_selector.autons_add({
-      Auton("red left", redleft),
-      Auton("blue right", blueright)
+  ez::as::auton_selector.autons_add({
+      Auton("red right", redright),
+      Auton("red left 4", redleft_4_ring),
+      Auton("blue right 4", blueright_4ring),
+      Auton("blue left", blueleft),
+      Auton("red local SAWP", sawp_red_local)
   });
+
   // Initialize chassis and auton selector
   chassis.initialize();
   ez::as::initialize();
@@ -427,6 +701,9 @@ void opcontrol() {
     arm_update(master.get_digital(DIGITAL_B), master.get_digital_new_press(DIGITAL_RIGHT), master.get_digital_new_press(DIGITAL_DOWN));
     mogo_update(master.get_digital_new_press(DIGITAL_A));
     doinker_update(master.get_digital_new_press(DIGITAL_UP));
+    //arm_update(master.get_digital(DIGITAL_B), master.get_digital_new_press(DIGITAL_RIGHT), master.get_digital_new_press(DIGITAL_DOWN));
+    mogo_update(master.get_digital_new_press(DIGITAL_A));
+    doinker_update(master.get_digital_new_press(DIGITAL_L1));
     pros::lcd::print(3, "%lf", (double)(arm_sensor.get_position() / 100));
     
     // . . .
