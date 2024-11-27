@@ -44,6 +44,7 @@ void mogo_update(bool button_new_press){
 #define arm_scoring 154
 
 double arm_target = arm_noninterfere;
+
 ez::PID arm_pid(3, 0, 0, 0, "Arm");
 bool arm_pid_running = false;
 /*bool arm_is_scoring = false;
